@@ -44,6 +44,7 @@ type City struct {
 func main() {
 	file := flag.String("f", "", "filepath")
 	out := flag.String("out", "cities.json", "output filename (json)")
+	mn := flag.String("manual", "manual.json", "manually added cities")
 	flag.Parse()
 
 	lines, err := read(*file)
@@ -73,6 +74,14 @@ func main() {
 		cities = append(cities, city)
 	}
 
+	mncities, err := readManual(*mn)
+	if err != nil {
+		log.Println("couldn't read manual cities, continuing. %s %w", *mn, err)
+	}
+	for _, mnc := range mncities {
+		cities = append(cities, mnc)
+	}
+
 	o, err := os.OpenFile(*out, os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
@@ -87,6 +96,8 @@ func read(filename string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
+
 	s := bufio.NewScanner(f)
 	lines := []string{}
 	for s.Scan() {
@@ -94,4 +105,18 @@ func read(filename string) ([]string, error) {
 		lines = append(lines, line)
 	}
 	return lines, nil
+}
+
+func readManual(filename string) ([]City, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+	var manual []City
+	err = dec.Decode(&manual)
+
+	return manual, err
 }
