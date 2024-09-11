@@ -8,6 +8,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
+
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 var fields map[string]int = map[string]int{
@@ -64,7 +69,7 @@ func main() {
 			log.Println(perr)
 		}
 		city := City{
-			Name:      sp[fields["name"]],
+			Name:      clean(sp[fields["name"]]),
 			Latitude:  lat,
 			Longitude: lng,
 			Country:   sp[fields["country code"]],
@@ -76,11 +81,10 @@ func main() {
 
 	mncities, err := readManual(*mn)
 	if err != nil {
-		log.Println("couldn't read manual cities, continuing. %s %w", *mn, err)
+		log.Println("couldn't read manual cities, continuing.", *mn, err)
 	}
-	for _, mnc := range mncities {
-		cities = append(cities, mnc)
-	}
+
+	cities = append(cities, mncities...)
 
 	o, err := os.OpenFile(*out, os.O_CREATE|os.O_TRUNC, os.ModePerm)
 	if err != nil {
@@ -88,7 +92,10 @@ func main() {
 	}
 	defer o.Close()
 	enc := json.NewEncoder(o)
-	enc.Encode(cities)
+	err = enc.Encode(cities)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func read(filename string) ([]string, error) {
@@ -119,4 +126,13 @@ func readManual(filename string) ([]City, error) {
 	err = dec.Decode(&manual)
 
 	return manual, err
+}
+
+func clean(name string) string {
+	result, _, err := transform.String(transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn))), name)
+	if err != nil {
+		log.Println(err)
+		return name
+	}
+	return result
 }
