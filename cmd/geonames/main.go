@@ -30,7 +30,7 @@ func main() {
 			modified = append(modified, mfcp...)
 		}
 
-		cities, err := data.ReadCities(*file, *includeCountries, modified)
+		cities, err := data.ReadCitiesModified(*file, *includeCountries, modified)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -41,7 +41,7 @@ func main() {
 		cities = append(cities, mncities...)
 		jsonobj = cities
 	} else if *format == "countries" {
-		countries, err := data.ReadCountries(*file, *includeCountries)
+		countries, err := data.ReadCountriesFiltered(*file, *includeCountries)
 		if err != nil {
 			log.Fatal(err)
 		}

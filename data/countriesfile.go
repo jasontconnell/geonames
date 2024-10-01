@@ -18,7 +18,30 @@ type Country struct {
 	Abbr3 string `json:"let3"`
 }
 
-func ReadCountries(filename, includeCountries string) ([]Country, error) {
+func ReadCountries(filename string) ([]Country, error) {
+	lines, err := read(filename)
+	if err != nil {
+		return nil, err
+	}
+	countries := []Country{}
+	for _, line := range lines {
+		if line[0] == '#' {
+			continue
+		}
+		sp := strings.Split(line, "\t")
+
+		abbr := sp[countriesFields["iso"]]
+		country := Country{
+			Name:  sp[countriesFields["country"]],
+			Abbr:  abbr,
+			Abbr3: sp[countriesFields["iso3"]],
+		}
+		countries = append(countries, country)
+	}
+	return countries, nil
+}
+
+func ReadCountriesFiltered(filename, includeCountries string) ([]Country, error) {
 	lines, err := read(filename)
 	if err != nil {
 		return nil, err
@@ -48,7 +71,7 @@ func ReadCountries(filename, includeCountries string) ([]Country, error) {
 
 		country := Country{
 			Name:  sp[countriesFields["country"]],
-			Abbr:  sp[countriesFields["iso"]],
+			Abbr:  abbr,
 			Abbr3: sp[countriesFields["iso3"]],
 		}
 		countries = append(countries, country)

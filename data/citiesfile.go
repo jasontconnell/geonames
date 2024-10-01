@@ -40,7 +40,55 @@ type City struct {
 	TimeZone       string   `json:"timezone"`
 }
 
-func ReadCities(filename, includeCountries string, modified []City) ([]City, error) {
+func ReadCities(filename string) ([]City, error) {
+	lines, err := read(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	cities := []City{}
+	for _, line := range lines {
+		sp := strings.Split(line, "\t")
+
+		country := sp[citiesFields["country code"]]
+
+		lat, laterr := strconv.ParseFloat(sp[citiesFields["latitude"]], 64)
+		lng, lngerr := strconv.ParseFloat(sp[citiesFields["longitude"]], 64)
+
+		if laterr != nil || lngerr != nil {
+			log.Println(laterr, lngerr)
+			continue
+		}
+
+		splitAltNames := strings.Split(sp[citiesFields["alternatenames"]], ",")
+		altNames := []string{}
+		for _, s := range splitAltNames {
+			if isASCII(s) {
+				altNames = append(altNames, s)
+			}
+		}
+
+		state := sp[citiesFields["admin1 code"]]
+		if country != "US" {
+			state = ""
+		}
+
+		city := City{
+			Name:           sp[citiesFields["asciiname"]],
+			AlternateNames: altNames,
+			Latitude:       lat,
+			Longitude:      lng,
+			Country:        sp[citiesFields["country code"]],
+			State:          state,
+			TimeZone:       sp[citiesFields["timezone"]],
+		}
+
+		cities = append(cities, city)
+	}
+	return cities, nil
+}
+
+func ReadCitiesModified(filename, includeCountries string, modified []City) ([]City, error) {
 	lines, err := read(filename)
 	if err != nil {
 		return nil, err
